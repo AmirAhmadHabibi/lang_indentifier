@@ -9,9 +9,11 @@ class LangModeler:
         self.name = corpus_name
         self.corpus = ' ' * n + corpus + ' ' * n
         self.n = n
-        self.ngrams = {i: dict() for i in range(1, n + 1)}
+        self.corpus_len = len(corpus)
+        self.counts = {i: dict() for i in range(1, n + 1)}
         self._count_ngrams()
         self.smoothing = smoothing
+        self.v = 0  # length of the vocabulary
 
     def _count_ngrams(self):
         """
@@ -19,23 +21,30 @@ class LangModeler:
         and stores them into a dictionary mapping the numbers k (1 to n) to the
         dictionaries of k-grams and their counts
         the resulting dictionary would be like this:
-            self.ngrams[3]['the']=12
+            self.counts[3]['the']=12
         """
         for i in range(self.n, len(self.corpus) - self.n):
             for j in range(1, self.n + 1):
                 curr_ngram = self.corpus[i:i + j]
-                if curr_ngram not in self.ngrams[j]:
-                    self.ngrams[j][curr_ngram] = 1
+                if curr_ngram not in self.counts[j]:
+                    self.counts[j][curr_ngram] = 1
                 else:
-                    self.ngrams[j][curr_ngram] += 1
+                    self.counts[j][curr_ngram] += 1
+
+        self.v = len(self.counts[1])
 
     def p(self, ngram):
+        # TODO : zero counts
         if self.smoothing == 'unsmoothed':
-            # TODO
-            pass
+            if self.n == 1:
+                return self.counts[self.n][ngram] / self.corpus_len
+            else:
+                return self.counts[self.n][ngram] / self.counts[self.n - 1][ngram[:-1]]
         elif self.smoothing == 'laplace':
-            # TODO
-            pass
+            if self.n == 1:
+                return (self.counts[self.n][ngram] + 1) / (self.corpus_len + self.v)
+            else:
+                return (self.counts[self.n][ngram] + 1) / (self.counts[self.n - 1][ngram[:-1]] + self.v)
         elif self.smoothing == 'interpolation':
             # TODO
             pass
