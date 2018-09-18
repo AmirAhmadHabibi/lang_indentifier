@@ -1,10 +1,17 @@
 class LangModeler:
-    def __init__(self, corpus_name, corpus, n=4):
+    def __init__(self, corpus_name, corpus, n=4, smoothing='unsmoothed'):
+        """
+        :param corpus_name: the name of the corpus for future reference
+        :param corpus: the text of the corpus
+        :param n: size of the context in n-gram
+        :param smoothing: one of the following methods: {"unsmoothed", "laplace", "interpolation"}
+        """
         self.name = corpus_name
         self.corpus = ' ' * n + corpus + ' ' * n
         self.n = n
         self.ngrams = {i: dict() for i in range(1, n + 1)}
         self._count_ngrams()
+        self.smoothing = smoothing
 
     def _count_ngrams(self):
         """
@@ -23,5 +30,15 @@ class LangModeler:
                     self.ngrams[j][curr_ngram] += 1
 
     def p(self, ngram):
-        # TODO
+        if self.smoothing == 'unsmoothed':
+            # TODO
+            pass
+        elif self.smoothing == 'laplace':
+            # TODO
+            pass
+        elif self.smoothing == 'interpolation':
+            # TODO
+            pass
+        else:
+            raise Exception("Smoothing method not defined!")
         pass
