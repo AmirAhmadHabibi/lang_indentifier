@@ -1,3 +1,4 @@
 def perplexity(lang_model, test_set):
+    perp = 0
     # TODO
-    pass
+    return perp
