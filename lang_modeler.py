@@ -10,10 +10,11 @@ class LangModeler:
         self.corpus = ' ' * n + corpus + ' ' * n
         self.n = n
         self.corpus_len = len(corpus)
-        self.counts = {i: dict() for i in range(1, n + 1)}
+        self.counts = [dict()] * (n + 1)
         self._count_ngrams()
         self.smoothing = smoothing
         self.v = 0  # length of the vocabulary
+        self.l = [0] * (n + 1)  # lambda values for deleted interpolation alg
 
     def _count_ngrams(self):
         """
@@ -33,21 +34,53 @@ class LangModeler:
 
         self.v = len(self.counts[1])
 
-    def p(self, ngram):
+    def _set_lambdas(self):
+        # for all the ngrams of size n
+        for ngram in self.counts[self.n].keys():
+            max_val = 0
+            max_i = 0
+            for i in range(self.n):
+                sub_ngram = ngram[i:]
+                try:
+                    if len(sub_ngram) == 1:
+                        val = (self.counts[self.n][sub_ngram] - 1) / (self.corpus_len - 1)
+                    else:
+                        val = (self.counts[self.n][sub_ngram] - 1) / (self.counts[self.n - 1][sub_ngram[:-1]] - 1)
+                except ZeroDivisionError:
+                    val = 0
+
+                if val > max_val:
+                    max_val = val
+                    max_i = i
+
+            self.l[self.n - max_i] += self.counts[self.n][ngram]
+
+        # normalise lambdas
+        sum_l = sum(self.l)
+        self.l = [el / sum_l for el in self.l]
+
+    def _calculate_prob(self, ngram, k=0):
         # TODO : zero counts
+        # if its a unigram divide by the size of the vocabulary otherwise divide by count of the previous tokens
+        if self.n == 1:
+            return (self.counts[self.n][ngram] + k) / (self.corpus_len + (k * self.v))
+        else:
+            return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
+
+    def p(self, ngram):
+        if len(ngram) != self.n:
+            raise Exception("Ngram size mismatch!")
+
+        prob = 0
         if self.smoothing == 'unsmoothed':
-            if self.n == 1:
-                return self.counts[self.n][ngram] / self.corpus_len
-            else:
-                return self.counts[self.n][ngram] / self.counts[self.n - 1][ngram[:-1]]
+            prob = self._calculate_prob(ngram)
         elif self.smoothing == 'laplace':
-            if self.n == 1:
-                return (self.counts[self.n][ngram] + 1) / (self.corpus_len + self.v)
-            else:
-                return (self.counts[self.n][ngram] + 1) / (self.counts[self.n - 1][ngram[:-1]] + self.v)
+            prob = self._calculate_prob(ngram, k=1)
         elif self.smoothing == 'interpolation':
-            # TODO
-            pass
+            for i in range(self.n):
+                prob += self._calculate_prob(ngram[i:]) * self.l[i+1]
         else:
             raise Exception("Smoothing method not defined!")
-        pass
+        return prob
+
+#
