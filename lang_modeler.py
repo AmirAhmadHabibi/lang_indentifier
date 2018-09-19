@@ -11,10 +11,12 @@ class LangModeler:
         self.n = n
         self.corpus_len = len(corpus)
         self.counts = [dict()] * (n + 1)
-        self._count_ngrams()
         self.smoothing = smoothing
         self.v = 0  # length of the vocabulary
         self.l = [0] * (n + 1)  # lambda values for deleted interpolation alg
+
+        self._count_ngrams()
+        self._set_lambdas()
 
     def _count_ngrams(self):
         """
@@ -35,6 +37,9 @@ class LangModeler:
         self.v = len(self.counts[1])
 
     def _set_lambdas(self):
+        """
+        calculate the lambda values for deleted interpolation algorithm.
+        """
         # for all the ngrams of size n
         for ngram in self.counts[self.n].keys():
             max_val = 0
@@ -68,6 +73,10 @@ class LangModeler:
             return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
 
     def p(self, ngram):
+        """
+        returns the probability of last token of the ngram if the previous
+        tokens had happened.
+        """
         if len(ngram) != self.n:
             raise Exception("Ngram size mismatch!")
 
@@ -81,6 +90,7 @@ class LangModeler:
                 prob += self._calculate_prob(ngram[i:]) * self.l[i+1]
         else:
             raise Exception("Smoothing method not defined!")
+
         return prob
 
 #
