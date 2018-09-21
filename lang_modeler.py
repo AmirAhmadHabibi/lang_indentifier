@@ -10,7 +10,7 @@ class LangModeler:
         self.corpus = ' ' * n + corpus + ' ' * n
         self.n = n
         self.corpus_len = len(corpus)
-        self.counts = [dict()] * (n + 1)
+        self.counts = [dict() for _ in range(n + 1)]
         self.smoothing = smoothing
         self.v = 0  # length of the vocabulary
         self.l = [0] * (n + 1)  # lambda values for deleted interpolation alg
@@ -48,9 +48,10 @@ class LangModeler:
                 sub_ngram = ngram[i:]
                 try:
                     if len(sub_ngram) == 1:
-                        val = (self.counts[self.n][sub_ngram] - 1) / (self.corpus_len - 1)
+                        val = (self.counts[self.n - i][sub_ngram] - 1) / (self.corpus_len - 1)
                     else:
-                        val = (self.counts[self.n][sub_ngram] - 1) / (self.counts[self.n - 1][sub_ngram[:-1]] - 1)
+                        val = (self.counts[self.n - i][sub_ngram] - 1) / (
+                                    self.counts[self.n - i - 1][sub_ngram[:-1]] - 1)
                 except ZeroDivisionError:
                     val = 0
 
@@ -74,6 +75,8 @@ class LangModeler:
                 return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
         except ZeroDivisionError:
             return 0
+        except KeyError:
+            return 0
 
     def p(self, ngram):
         """
@@ -91,9 +94,8 @@ class LangModeler:
             prob = self._calculate_prob(ngram, k=1)
         elif self.smoothing == 'interpolation':
             for i in range(self.n):
-                prob += self._calculate_prob(ngram[i:]) * self.l[i+1]
+                prob += self._calculate_prob(ngram[i:]) * self.l[i + 1]
         else:
             raise Exception("Smoothing method not defined!")
 
         return prob
-
