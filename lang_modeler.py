@@ -66,17 +66,21 @@ class LangModeler:
 
     def _calculate_prob(self, ngram, k=0):
         # TODO : zero counts
-        # if its a unigram divide by the size of the vocabulary otherwise divide by count of the previous tokens
-        if self.n == 1:
-            return (self.counts[self.n][ngram] + k) / (self.corpus_len + (k * self.v))
-        else:
-            return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
+        try:
+            # if its a unigram divide by the size of the vocabulary otherwise divide by count of the previous tokens
+            if self.n == 1:
+                return (self.counts[self.n][ngram] + k) / (self.corpus_len + (k * self.v))
+            else:
+                return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
+        except ZeroDivisionError:
+            return 0
 
     def p(self, ngram):
         """
-        returns the probability of last token of the ngram if the previous
-        tokens had happened.
+        returns the probability of last token of the input ngram assuming
+        the previous tokens had happened.
         """
+        # TODO: log probability?
         if len(ngram) != self.n:
             raise Exception("Ngram size mismatch!")
 
@@ -93,4 +97,3 @@ class LangModeler:
 
         return prob
 
-#
