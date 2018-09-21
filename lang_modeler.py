@@ -75,6 +75,8 @@ class LangModeler:
                 return (self.counts[self.n][ngram] + k) / (self.counts[self.n - 1][ngram[:-1]] + (k * self.v))
         except ZeroDivisionError:
             return 0
+        except KeyError:
+            return 0
 
     def p(self, ngram):
         """
