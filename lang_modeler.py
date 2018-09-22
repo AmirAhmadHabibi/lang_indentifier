@@ -1,12 +1,12 @@
 class LangModeler:
-    def __init__(self, corpus_name, corpus, n=4, smoothing='unsmoothed'):
+    def __init__(self, name, corpus, n=4, smoothing='unsmoothed'):
         """
-        :param corpus_name: the name of the corpus for future reference
+        :param name: the name of the corpus for future reference
         :param corpus: the text of the corpus
         :param n: size of the context in n-gram
         :param smoothing: one of the following methods: {"unsmoothed", "laplace", "interpolation"}
         """
-        self.name = corpus_name
+        self.name = name
         self.corpus = ' ' * n + corpus + ' ' * n
         self.n = n
         self.corpus_len = len(corpus)
