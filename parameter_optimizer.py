@@ -20,6 +20,7 @@ def fileread(mt, size):
         pickle.dump(model_list, f)
 
     # Using the stored model to test the dev data
+    tofile = ''
     for filename in os.listdir(os.getcwd() + '/811_a1_dev/'):
         with open('./811_a1_dev/' + filename, "r") as f:
             low_perplexer = sys.maxsize
@@ -28,6 +29,10 @@ def fileread(mt, size):
                 if perplexer < low_perplexer:
                     low_perplexer = perplexer
                     possible_filename = model_obj.name
+                    tofile += filename + '  ' + possible_filename + '   ' + str(low_perplexer) + '  ' + str(size) + '\n'
+    with open(os.path.join(mt + '_' + str(size)), "a") as file1:
+        file1.write(tofile)
+        file1.close()
 
 
 method_list = ['unsmoothed', 'laplace', 'interpolation']

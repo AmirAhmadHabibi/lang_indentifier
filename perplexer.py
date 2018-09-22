@@ -16,5 +16,6 @@ def pp(model, testcase, ngram_size):
         if s != 0:
             N += 1
             pp = pp * (1 / s)
-    pp = pow(pp, 1 / N)
+    if( N!= 0):
+        pp = pow(pp, 1 / N)
     return pp
