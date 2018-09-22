@@ -8,29 +8,29 @@ import pickle
 import sys
 
 
-def fileread(mt, size):
+def fileread(method, size):
     print(" Please enter 1. ")
     model_list = []
     # creating a model for the training data and storing it.
-    for filename in os.listdir(os.getcwd() + '/811_a1_train/'):
+    for filename in os.listdir(os.getcwd() + '/811_a1_dev/'):
         with open('./811_a1_dev/' + filename, "r") as f:
-            model = q.LangModeler(filename, f.read().replace('\n', ''), mt, size)
+            model = q.LangModeler(filename, f.read().replace('\n', ''), size,method)
             model_list.append(model)
-    with open(mt + size + '.pkl', 'wb') as f:
+    with open('./models/' + method + str(size) + '.pkl', 'wb') as f:
         pickle.dump(model_list, f)
 
     # Using the stored model to test the dev data
     tofile = ''
-    for filename in os.listdir(os.getcwd() + '/811_a1_dev/'):
-        with open('./811_a1_dev/' + filename, "r") as f:
-            low_perplexer = sys.maxsize
+    for filename in os.listdir(os.getcwd() + '/811_a1_train/'):
+        with open('./811_a1_train/' + filename, "r") as f:
+            min_perplexity = sys.maxsize
             for model_obj in model_list:
-                perplexer = p.pp(model_obj, f.read(), size)
-                if perplexer < low_perplexer:
-                    low_perplexer = perplexer
+                perplexity = p.pp(model_obj, f.read(), size)
+                if perplexity < min_perplexity :
+                    min_perplexity = perplexity
                     possible_filename = model_obj.name
-                    tofile += filename + '  ' + possible_filename + '   ' + str(low_perplexer) + '  ' + str(size) + '\n'
-    with open(os.path.join(mt + '_' + str(size)), "a") as file1:
+                    tofile += filename + '  ' + possible_filename + '   ' + str(min_perplexity ) + '  ' + str(size) + '\n'
+    with open('./perplexity/' + method + '_' + str(size), "a") as file1:
         file1.write(tofile)
         file1.close()
 
