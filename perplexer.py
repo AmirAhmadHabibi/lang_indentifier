@@ -7,7 +7,7 @@ def pp(model, testcase, ngram_size):
     """
     N = 0
     pp = 1
-    testcase = ' ' * ngram_size + testcase + ' '* ngram_size
+    testcase = ' ' * ngram_size + testcase + ' ' * ngram_size
 
     for j in range(0, len(testcase) - ngram_size):
         curr_ngram = testcase[j:j + ngram_size]
