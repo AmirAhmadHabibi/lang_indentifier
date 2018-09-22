@@ -29,8 +29,8 @@ def fileread(method, size):
                 if perplexity < min_perplexity :
                     min_perplexity = perplexity
                     possible_filename = model_obj.name
-                    tofile += filename + '  ' + possible_filename + '   ' + str(min_perplexity ) + '  ' + str(size) + '\n'
-    with open('./perplexity/' + method + '_' + str(size), "a") as file1:
+                    tofile += filename + '  ' + possible_filename + '   ' + str(round(min_perplexity,4) ) + '  ' + str(size) + '\n'
+    with open('./perplexity/' + method + '_' + str(size), "w") as file1:
         file1.write(tofile)
         file1.close()
 
