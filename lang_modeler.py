@@ -67,7 +67,11 @@ class LangModeler:
             self.l[size] = [el / sum_l for el in lmbd]
 
     def _calculate_prob(self, ngram, k=0):
-        # TODO : zero counts
+        """
+        :param str ngram: input ngram token
+        :param k: laplace smoothing parameter
+        :return: probability of the ngram token in the model
+        """
         try:
             size = len(ngram)
             # if its a unigram divide by the size of the vocabulary otherwise divide by count of the previous tokens
@@ -84,6 +88,10 @@ class LangModeler:
         """
         returns the probability of last token of the input ngram assuming
         the previous tokens had happened.
+        
+        :param ngram:
+        :param smoothing:
+        :return:
         """
         # TODO: log probability?
 

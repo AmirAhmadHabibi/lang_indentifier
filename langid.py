@@ -11,6 +11,9 @@ TRAIN_PATH = './811_a1_train/'
 
 class LangIder:
     def __init__(self, max_n):
+        """
+        :param int max_n:  maximum size of the ngrams
+        """
         self.max_n = max_n
         self.models = []
         self.smoothing_methods = ['unsmoothed', 'laplace', 'interpolation']
@@ -29,6 +32,11 @@ class LangIder:
             self._optimize_parameter()
 
     def _train_models(self, max_ngram_size):
+        """ creates an instance of LangModeler for each language file in TRAIN_PATH
+        and saves them in a ./models/ for later use
+
+        :param int max_ngram_size:
+        """
         print('[log] training...')
         s_time = time()
 
@@ -45,6 +53,9 @@ class LangIder:
         print('[log] training done in', round(time() - s_time), 's')
 
     def _optimize_parameter(self):
+        """ iterates over all three smoothing methods and all different sizes up to n_max
+        and tries to find the best size for each method based on their f1-score
+        """
         # find the best ngram size for each method
         self.opt_param = dict()
         for method in self.smoothing_methods:
@@ -56,17 +67,28 @@ class LangIder:
                 self.predict('./811_a1_dev/', method, size)
 
                 # evaluate the prediction
-                f_s = LangIder.f_scorer(method + '_' + str(size))
+                f_s = LangIder.f_scorer(path='./predictions/' + method + '_' + str(size) + '.txt')
                 if f_s >= best_fscore:
                     best_fscore = f_s
                     best_size = size
+
             print('[log] best size for', method, 'is', best_size, 'with f-score of', best_fscore)
             self.opt_param[method] = best_size
 
         with open('./predictions/opt_parameters.pkl', 'wb') as outfile:
             pickle.dump(self.opt_param, outfile)
 
-    def predict(self, path, method, size=None):
+    def predict(self, path, method, size=None, o_file_name=None):
+        """predicts the language of the files in the input path with the specified smoothing method and
+        saves the results in file
+        if the size parameter is not specified, it would use the optimised parameter for that smoothing method
+        if the output file name is not specified the file would be saved with default naming format
+
+        :param str path: directory of the test cases
+        :param str method: smoothing method {"unsmoothed", "laplace", "interpolation"}
+        :param int size: ngram size
+        :param str o_file_name: customized output file name
+        """
         if size is None:
             size = self.opt_param[method]
         output = ''
@@ -87,14 +109,22 @@ class LangIder:
 
         # write the list of all input test cases and their most similar language
         os.makedirs('./predictions/', exist_ok=True)
-        with open('./predictions/' + method + '_' + str(size), 'w') as outfile:
+        if o_file_name is None:
+            o_file_name = method + '_' + str(size) + '.txt'
+        with open('./predictions/' + o_file_name, 'w') as outfile:
             outfile.write(output)
 
     @staticmethod
-    def f_scorer(filename):
+    def f_scorer(path):
+        """computes the f_score of a prediction result in the specified format
+
+        :param str path: path to the prediction result file
+        :returns: f1-score value
+        :rtype: float
+        """
         y_true = []
         y_pred = []
-        with open('./predictions/' + filename, 'r') as infile:
+        with open(path, 'r') as infile:
             for line in infile:
                 dev, tra, p, s = line.split()
                 dev = dev.partition('-')[2].partition('.')[0]
@@ -104,17 +134,19 @@ class LangIder:
         le = LabelEncoder()
         le.fit(y_true)
         f_s = f1_score(le.transform(y_true), le.transform(y_pred), average='macro')
-        print('[log] F-score for', filename, 'is', f_s)
+        print('[log] F-score for', path, 'is', f_s)
         return f_s
 
     @staticmethod
     def _perplex(model, testcase, ngram_size, smoothing):
-        """
-        :param model: language model class
-        :param testcase: test corpus
-        :param ngram_size: the ngram number ex: bigram =2 , trigram =3
-        :param smoothing: one of the following methods: {"unsmoothed", "laplace", "interpolation"}
+        """computes the perplexity of the testcase given the model with a specific ngram size and smoothing method
 
+        :param LangModeler model:
+        :param str testcase:
+        :param int ngram_size: size of ngrams to chunk the testcase
+        :param str smoothing: {"unsmoothed", "laplace", "interpolation"}
+        :returns: perplexity value
+        :rtype: float
         """
         N = 0
         pp = 1
@@ -131,3 +163,6 @@ class LangIder:
 
 
 lid = LangIder(10)
+lid.predict(path='./test/', method='unsmoothed', o_file_name='results_test_unsmoothed.txt')
+lid.predict(path='./test/', method='laplace', o_file_name='results_test_laplace.txt')
+lid.predict(path='./test/', method='interpolation', o_file_name='results_test_interpolation.txt')
