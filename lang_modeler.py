@@ -1,9 +1,9 @@
 class LangModeler:
     def __init__(self, name, corpus, n=4):
         """
-        :param name: the name of the corpus for future reference
-        :param corpus: the text of the corpus
-        :param n: size of the context in n-gram
+        :param str name: the name of the corpus for future reference
+        :param str corpus: the text of the corpus
+        :param int n: size of the context in n-gram
         """
         self.name = name
         self.corpus = ' ' * n + corpus + ' ' * n
@@ -36,7 +36,7 @@ class LangModeler:
 
     def _set_lambdas(self):
         """
-        calculate the lambda values for deleted interpolation algorithm. for each max ngram size
+        calculate the lambda values for deleted interpolation algorithm for each ngram size
         """
         for size in range(1, self.n + 1):
             lmbd = [0] * (size + 1)
@@ -71,6 +71,7 @@ class LangModeler:
         :param str ngram: input ngram token
         :param k: laplace smoothing parameter
         :return: probability of the ngram token in the model
+        :rtype: float
         """
         try:
             size = len(ngram)
@@ -88,7 +89,7 @@ class LangModeler:
         """
         returns the probability of last token of the input ngram assuming
         the previous tokens had happened.
-        
+
         :param ngram:
         :param smoothing:
         :return:
