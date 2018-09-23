@@ -40,7 +40,7 @@ class LangIder:
         print('[log] training...')
         s_time = time()
 
-        # build models for all languages and each n value up to max_ngram_size
+        # build models for all languages in the directory and each n value up to max_ngram_size
         for filename in sorted(os.listdir(TRAIN_PATH)):
             with open(TRAIN_PATH + filename, 'r') as infile:
                 model = LangModeler(name=filename, corpus=infile.read().replace('\n', ' '), n=max_ngram_size)
