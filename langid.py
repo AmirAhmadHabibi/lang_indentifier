@@ -1,4 +1,5 @@
 import pickle
+from math import inf
 from time import time
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
@@ -24,8 +25,8 @@ class LangIder:
         else:
             self._train_models(max_n)
 
-        if os.path.isfile('./predictions/opt_parameters.pkl'):
-            with open('./predictions/opt_parameters.pkl', 'rb') as infile:
+        if os.path.isfile('./models/opt_parameters.pkl'):
+            with open('./models/opt_parameters.pkl', 'rb') as infile:
                 self.opt_param = pickle.load(infile)
             print('[log] optimised parameters loaded')
         else:
@@ -56,18 +57,20 @@ class LangIder:
         """ iterates over all three smoothing methods and all different sizes up to n_max
         and tries to find the best size for each method based on their f1-score
         """
+        s_time = time()
+
         # find the best ngram size for each method
         self.opt_param = dict()
         for method in self.smoothing_methods:
+            print('[log] optimising ngram size for', method, '...')
             # predict for each size
             best_size = 0
             best_fscore = -1
             for size in range(1, self.max_n + 1):
-                print('[log] predicting', method, size)
-                self.predict('./811_a1_dev/', method, size)
+                predictions = self.predict('./811_a1_dev/', method, size, save_file=False)
 
                 # evaluate the prediction
-                f_s = LangIder.f_scorer(path='./predictions/' + method + '_' + str(size) + '.txt')
+                f_s = LangIder.f_scorer(text=predictions)
                 if f_s >= best_fscore:
                     best_fscore = f_s
                     best_size = size
@@ -75,22 +78,32 @@ class LangIder:
             print('[log] best size for', method, 'is', best_size, 'with f-score of', best_fscore)
             self.opt_param[method] = best_size
 
-        with open('./predictions/opt_parameters.pkl', 'wb') as outfile:
+        with open('./models/opt_parameters.pkl', 'wb') as outfile:
             pickle.dump(self.opt_param, outfile)
+        print('[log] parameter optimisation done in', round(time() - s_time), 's')
 
-    def predict(self, path, method, size=None, o_file_name=None):
+    def predict(self, path, method, size=None, o_file_name=None, save_file=True):
         """predicts the language of the files in the input path with the specified smoothing method and
         saves the results in file
         if the size parameter is not specified, it would use the optimised parameter for that smoothing method
-        if the output file name is not specified the file would be saved with default naming format
+        if the output file name is not specified the file would be saved with default naming format. if save_file
+        is set to False, it would return the output string instead of saving it to on disk.
 
         :param str path: directory of the test cases
         :param str method: smoothing method {"unsmoothed", "laplace", "interpolation"}
         :param int size: ngram size
         :param str o_file_name: customized output file name
+        :param bool save_file: wether to save on disk or return the output
         """
+        if method not in ["unsmoothed", "laplace", "interpolation"]:
+            print('undefined method', method)
+            return
+
         if size is None:
             size = self.opt_param[method]
+
+        print('[log] predicting', method, size)
+
         output = ''
         # for each files in the given path find the lowest perplexity
         for filename in sorted(os.listdir(path)):
@@ -107,34 +120,50 @@ class LangIder:
             # add the most similar model name and the input test case to the output
             output += filename + '\t' + best_match + '\t' + str(round(min_perplexity, 2)) + '\t' + str(size) + '\n'
 
-        # write the list of all input test cases and their most similar language
-        os.makedirs('./predictions/', exist_ok=True)
-        if o_file_name is None:
-            o_file_name = method + '_' + str(size) + '.txt'
-        with open('./predictions/' + o_file_name, 'w') as outfile:
-            outfile.write(output)
+        if save_file:
+            # write the list of all input test cases and their most similar language
+            os.makedirs('./predictions/', exist_ok=True)
+            if o_file_name is None:
+                o_file_name = method + '_' + str(size) + '.txt'
+            with open('./predictions/' + o_file_name, 'w') as outfile:
+                outfile.write(output)
+        else:
+            return output
 
     @staticmethod
-    def f_scorer(path):
+    def f_scorer(text=None, path=None):
         """computes the f_score of a prediction result in the specified format
 
-        :param str path: path to the prediction result file
+        :param str text: the prediction text
+        :param str path: path to the prediction result file in case of no direct text
         :returns: f1-score value
         :rtype: float
         """
         y_true = []
         y_pred = []
-        with open(path, 'r') as infile:
-            for line in infile:
-                dev, tra, p, s = line.split()
-                dev = dev.partition('-')[2].partition('.')[0]
-                tra = tra.partition('-')[2].partition('.')[0]
-                y_true.append(dev)
-                y_pred.append(tra)
+        lines = []
+        if text is None:
+            if path is None:
+                raise Exception("At least one of the parameters must be set!")
+            with open(path, 'r') as infile:
+                for line in infile:
+                    lines.append(line)
+        else:
+            lines = text.split('\n')
+
+        for line in lines:
+            if line.strip() == '':
+                continue
+            dev, tra, p, s = line.split()
+            dev = dev.partition('-')[2].partition('.')[0]
+            tra = tra.partition('-')[2].partition('.')[0]
+            y_true.append(dev)
+            y_pred.append(tra)
+
         le = LabelEncoder()
         le.fit(y_true)
         f_s = f1_score(le.transform(y_true), le.transform(y_pred), average='macro')
-        print('[log] F-score for', path, 'is', f_s)
+        print('\t[log] F-score is', f_s)
         return f_s
 
     @staticmethod
@@ -159,10 +188,23 @@ class LangIder:
                 pp = pp * (1 / s)
         if N != 0:
             pp = pow(pp, 1 / N)
+        else:
+            pp = inf
         return pp
 
 
-lid = LangIder(10)
-lid.predict(path='./test/', method='unsmoothed', o_file_name='results_test_unsmoothed.txt')
-lid.predict(path='./test/', method='laplace', o_file_name='results_test_laplace.txt')
-lid.predict(path='./test/', method='interpolation', o_file_name='results_test_interpolation.txt')
+if __name__ == '__main__':
+    smoothing_method = 'unsmoothed'
+    docs_path = './811_a1_test_final/'
+
+    if len(sys.argv) > 1:
+        smoothing_method = sys.argv[1]
+        if len(sys.argv) > 2:
+            docs_path = sys.argv[2]
+
+    lid = LangIder(10)
+    lid.predict(path=docs_path, method=smoothing_method, o_file_name='results_test_' + smoothing_method + '.txt')
+
+# lid.predict(path='./test/', method='unsmoothed', o_file_name='results_test_unsmoothed.txt')
+# lid.predict(path='./test/', method='laplace', o_file_name='results_test_laplace.txt')
+# lid.predict(path='./test/', method='interpolation', o_file_name='results_test_interpolation.txt')
