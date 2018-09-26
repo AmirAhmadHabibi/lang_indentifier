@@ -53,8 +53,8 @@ class LangModeler:
                                     self.counts[size - i - 1][sub_ngram[:-1]] - 1)
                     except ZeroDivisionError:
                         val = 0
-                    except KeyError:  # Need to investiage
-                        return 0
+                    except KeyError:
+                        val = 0
 
                     if val > max_val:
                         max_val = val
