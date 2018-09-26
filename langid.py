@@ -7,14 +7,16 @@ from lang_modeler import LangModeler
 import os
 import sys
 
-TRAIN_PATH = './811_a1_train/'
-
 
 class LangIder:
-    def __init__(self, max_n):
+    def __init__(self, max_n, train_path, dev_path):
         """
         :param int max_n:  maximum size of the ngrams
+        :param str train_path: path to the directory of the training files
+        :param str dev_path: path to the directory of the development files
         """
+        self.train_path = train_path
+        self.dev_path = dev_path
         self.max_n = max_n
         self.models = []
         self.smoothing_methods = ['unsmoothed', 'laplace', 'interpolation']
@@ -42,8 +44,8 @@ class LangIder:
         s_time = time()
 
         # build models for all languages in the directory and each n value up to max_ngram_size
-        for filename in sorted(os.listdir(TRAIN_PATH)):
-            with open(TRAIN_PATH + filename, 'r') as infile:
+        for filename in sorted(os.listdir(self.train_path)):
+            with open(self.train_path + filename, 'r') as infile:
                 model = LangModeler(name=filename, corpus=infile.read().replace('\n', ' '), n=max_ngram_size)
                 self.models.append(model)
 
@@ -67,7 +69,7 @@ class LangIder:
             best_size = 0
             best_fscore = -1
             for size in range(1, self.max_n + 1):
-                predictions = self.predict('./811_a1_dev/', method, size, save_file=False)
+                predictions = self.predict(self.dev_path, method, size, save_file=False)
 
                 # evaluate the prediction
                 f_s = LangIder.f_scorer(text=predictions)
@@ -194,17 +196,23 @@ class LangIder:
 
 
 if __name__ == '__main__':
+    t_path = './811_a1_train/'
+    d_path = './811_a1_dev/'
+    test_path = './811_a1_test_final/'
     smoothing_method = 'unsmoothed'
-    docs_path = './811_a1_test_final/'
 
     if len(sys.argv) > 1:
         smoothing_method = sys.argv[1]
         if len(sys.argv) > 2:
-            docs_path = sys.argv[2]
+            test_path = sys.argv[2]
 
-    lid = LangIder(10)
-    lid.predict(path=docs_path, method=smoothing_method, o_file_name='results_test_' + smoothing_method + '.txt')
+    if smoothing_method == 'add-one':
+        smoothing_method = 'laplace'
 
-# lid.predict(path='./test/', method='unsmoothed', o_file_name='results_test_unsmoothed.txt')
-# lid.predict(path='./test/', method='laplace', o_file_name='results_test_laplace.txt')
-# lid.predict(path='./test/', method='interpolation', o_file_name='results_test_interpolation.txt')
+    lid = LangIder(10, train_path=t_path, dev_path=d_path)
+    lid.predict(path=test_path, method=smoothing_method, o_file_name='results_test_' + sys.argv[1] + '.txt')
+
+# lid = LangIder(10)
+# lid.predict(path='./811_a1_dev/', method='unsmoothed', o_file_name='results_dev_unsmoothed.txt')
+# lid.predict(path='./811_a1_dev/', method='laplace', o_file_name='results_dev_laplace.txt')
+# lid.predict(path='./811_a1_dev/', method='interpolation', o_file_name='results_dev_interpolation.txt')
