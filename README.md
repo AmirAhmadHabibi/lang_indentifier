@@ -1,4 +1,5 @@
 #LangId
+
 You can run the langid.py file and give it the parameters, smoothing method and the path to the directory containing the 
 test files. In the first run it would need some time to train the models and optimise parameters but then the files 
 would be saved on disk and the next runs would not take time for training again. Without the input values the default 
